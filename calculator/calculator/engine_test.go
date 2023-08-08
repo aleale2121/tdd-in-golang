@@ -1,72 +1,229 @@
 package calculator_test
 
 import (
-	"log"
-	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/aleale2121/golang-tdd/calculator/calculator"
 )
 
-func TestMain(m *testing.M) {
-	// setup statements
-	setup()
+func TestGetExpectedLength(t *testing.T) {
+	// Arrange
+	e := calculator.NewEngine()
 
-	// run the tests
-	e := m.Run()
+	// Act
+	opLen := e.GetNumOperands()
 
-	// cleanup statements
-	teardown()
-
-	// report the exit code
-	os.Exit(e)
+	//Assert
+	assert.Equal(t, 2, opLen)
 }
 
-func setup() {
-	log.Println("Setting up.")
-}
+func TestGetValidOperations(t *testing.T) {
+	// Arrange
+	e := calculator.NewEngine()
 
-func teardown() {
-	log.Println("Tearing down.")
-}
+	// Act
+	ops := e.GetValidOperators()
 
-func init() {
-	log.Println("Init setup.")
+	// Assert
+	assert.Equal(t, 4, len(ops))
+	assert.Contains(t, ops, "+")
+	assert.Contains(t, ops, "-")
+	assert.Contains(t, ops, "/")
+	assert.Contains(t, ops, "*")
 }
 
 func TestAdd(t *testing.T) {
-	defer func() {
-		log.Println("Deferred tearing down.")
-	}()
-
 	// Arrange
-	e := calculator.Engine{}
-
-	actAssert := func(x, y, want float64) {
-		// Act
-		got := e.Add(x, y)
-
-		//Assert
-		if got != want {
-			t.Errorf("Add(%.2f,%.2f) incorrect, got: %.2f, want: %.2f", x, y, got, want)
-		}
-	}
+	e := calculator.NewEngine()
 
 	t.Run("positive input", func(t *testing.T) {
+		// Arrange
 		x, y := 2.5, 3.5
 		want := 6.0
-		actAssert(x, y, want)
+
+		// Act
+		result, err := e.Add(x, y)
+
+		// Assert
+		require.NotNil(t, result)
+		require.Nil(t, err)
+		assert.Equal(t, want, *result)
 	})
 
 	t.Run("negative input", func(t *testing.T) {
+		// Arrange
 		x, y := -2.5, -3.5
 		want := -6.0
-		actAssert(x, y, want)
+
+		// Act
+		result, err := e.Add(x, y)
+
+		// Assert
+		require.NotNil(t, result)
+		require.Nil(t, err)
+		assert.Equal(t, want, *result)
+	})
+}
+
+func TestSub(t *testing.T) {
+	// Arrange
+	e := calculator.NewEngine()
+
+	t.Run("positive input", func(t *testing.T) {
+		// Arrange
+		x, y := 3.5, 2.5
+		want := 1.0
+
+		// Act
+		result, err := e.Sub(x, y)
+
+		// Assert
+		require.NotNil(t, result)
+		require.Nil(t, err)
+		assert.Equal(t, want, *result)
+	})
+
+	t.Run("negative input", func(t *testing.T) {
+		// Arrange
+		x, y := -3.5, -2.5
+		want := -1.0
+
+		// Act
+		result, err := e.Sub(x, y)
+
+		// Assert
+		require.NotNil(t, result)
+		require.Nil(t, err)
+		assert.Equal(t, want, *result)
+	})
+}
+
+func TestMult(t *testing.T) {
+	// Arrange
+	e := calculator.NewEngine()
+
+	t.Run("positive input", func(t *testing.T) {
+		// Arrange
+		x, y := 3.5, 2.0
+		want := 7.0
+
+		// Act
+		result, err := e.Mult(x, y)
+
+		// Assert
+		require.NotNil(t, result)
+		require.Nil(t, err)
+		assert.Equal(t, want, *result)
+	})
+
+	t.Run("negative input", func(t *testing.T) {
+		// Arrange
+		x, y := -3.5, -2.0
+		want := 7.0
+
+		// Act
+		result, err := e.Mult(x, y)
+
+		// Assert
+		require.NotNil(t, result)
+		require.Nil(t, err)
+		assert.Equal(t, want, *result)
+	})
+}
+
+func TestDiv(t *testing.T) {
+	// Arrange
+	e := calculator.NewEngine()
+
+	t.Run("positive input", func(t *testing.T) {
+		// Arrange
+		x, y := 3.5, 2.0
+		want := 1.75
+
+		// Act
+		result, err := e.Div(x, y)
+
+		// Assert
+		require.NotNil(t, result)
+		require.Nil(t, err)
+		assert.Equal(t, want, *result)
+	})
+
+	t.Run("negative input", func(t *testing.T) {
+		// Arrange
+		x, y := -3.5, -2.0
+		want := 1.75
+
+		// Act
+		result, err := e.Div(x, y)
+
+		// Assert
+		require.NotNil(t, result)
+		require.Nil(t, err)
+		assert.Equal(t, want, *result)
+	})
+
+	t.Run("zero divisor", func(t *testing.T) {
+		// Arrange
+		x, y := -3.5, 0.0
+		expectedErr := "divide by zero"
+
+		// Act
+		result, err := e.Div(x, y)
+
+		// Assert
+		require.Nil(t, result)
+		require.NotNil(t, err)
+		assert.Contains(t, err.Error(), expectedErr)
+	})
+}
+
+func TestProcessOperation(t *testing.T) {
+	t.Run("valid operation", func(t *testing.T) {
+		// Arrange
+		e := calculator.NewEngine()
+		op := calculator.Operation{
+			Expression: "2 + 3",
+			Operator:   "+",
+			Operands:   []float64{2, 3},
+		}
+		expectedResult := "5.0"
+
+		// Act
+		result, err := e.ProcessOperation(op)
+
+		// Assert
+		require.Nil(t, err)
+		require.NotNil(t, result)
+		assert.Contains(t, *result, expectedResult)
+		assert.Contains(t, *result, op.Expression)
+	})
+
+	t.Run("invalid operation", func(t *testing.T) {
+		// Arrange
+		e := calculator.NewEngine()
+		op := calculator.Operation{
+			Expression: "2 % 3",
+			Operator:   "%",
+			Operands:   []float64{2, 3},
+		}
+
+		// Act
+		result, err := e.ProcessOperation(op)
+
+		// Assert
+		require.NotNil(t, err)
+		require.Nil(t, result)
+		assert.Contains(t, err.Error(), op.Expression)
+		assert.Contains(t, err.Error(), op.Operator)
 	})
 }
 
 func BenchmarkAdd(b *testing.B) {
-	e := calculator.Engine{}
+	e := calculator.NewEngine()
 
 	// run the Add function b.N times
 	for i := 0; i < b.N; i++ {

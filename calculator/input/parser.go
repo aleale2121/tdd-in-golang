@@ -4,21 +4,30 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
 	"github.com/aleale2121/golang-tdd/calculator/calculator"
 	"github.com/aleale2121/golang-tdd/calculator/format"
 )
 
 const expressionLength = 3
 
+// OperationProcessor is the interface for processing mathematical operations
+type OperationProcessor interface {
+	ProcessOperation(operation calculator.Operation) (*string, error)
+}
+
+// ValidationHelper is the interface for input valeidation
+type ValidationHelper interface {
+	CheckInput(operator string, operands []float64) error
+}
+
 // Parser is responsible for converting input to mathematical operations
 type Parser struct {
-	engine    *calculator.Engine
-	validator *Validator
+	engine    OperationProcessor
+	validator ValidationHelper
 }
 
 // NewParser creates a ready to user parser.
-func NewParser(op *calculator.Engine, v *Validator) *Parser {
+func NewParser(op OperationProcessor, v ValidationHelper) *Parser {
 	return &Parser{
 		engine:    op,
 		validator: v,

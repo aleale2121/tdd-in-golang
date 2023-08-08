@@ -2,8 +2,8 @@ package calculator
 
 import (
 	"fmt"
-	"github.com/aleale2121/golang-tdd/calculator/format"
 
+	"github.com/aleale2121/golang-tdd/calculator/format"
 )
 
 // Operation is the wrapper object that contains
@@ -17,17 +17,20 @@ type Operation struct {
 // Engine is the mathematical logic part of the calculator.
 type Engine struct {
 	expectedLength  int
-	validOperations map[string]func(x, y float64) float64
+	validOperations map[string]func(x, y float64) (*float64, error)
 }
 
 // NewEngine initialises an engine instance and returns it.
 func NewEngine() *Engine {
 	e := Engine{
 		expectedLength:  2,
-		validOperations: make(map[string]func(x float64, y float64) float64),
+		validOperations: make(map[string]func(x float64, y float64) (*float64, error)),
 	}
 	// validOperations is the map of valid operators and their corresponding functions
 	e.validOperations["+"] = e.Add
+	e.validOperations["-"] = e.Sub
+	e.validOperations["/"] = e.Div
+	e.validOperations["*"] = e.Mult
 	return &e
 }
 
@@ -53,12 +56,37 @@ func (e *Engine) ProcessOperation(operation Operation) (*string, error) {
 		err := fmt.Errorf("no operation for operator %s found", operation.Operator)
 		return nil, format.Error(operation.Expression, err)
 	}
-	res := f(operation.Operands[0], operation.Operands[1])
-	fres := format.Result(operation.Expression, res)
+	res, err := f(operation.Operands[0], operation.Operands[1])
+	if err != nil {
+		return nil, format.Error(operation.Expression, err)
+	}
+	fres := format.Result(operation.Expression, *res)
 	return &fres, nil
 }
 
 // Add is the function that processes the addition operation
-func (e *Engine) Add(x, y float64) float64 {
-	return x + y
+func (e *Engine) Add(x, y float64) (*float64, error) {
+	result := x + y
+	return &result, nil
+}
+
+// Sub is the function that processes the subtract operation
+func (e *Engine) Sub(x, y float64) (*float64, error) {
+	result := x - y
+	return &result, nil
+}
+
+// Sub is the function that processes the subtract operation
+func (e *Engine) Mult(x, y float64) (*float64, error) {
+	result := x * y
+	return &result, nil
+}
+
+// Div is the function that processes the divide operation
+func (e *Engine) Div(x, y float64) (*float64, error) {
+	if y == 0 {
+		return nil, fmt.Errorf("cannot divide by zero")
+	}
+	result := x / y
+	return &result, nil
 }
