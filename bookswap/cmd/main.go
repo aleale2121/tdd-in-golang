@@ -24,6 +24,7 @@ func main() {
 	if !ok {
 		log.Fatal("$BOOKSWAP_PORT not found")
 	}
+
 	books, users := importInitial()
 	ps := db.NewPostingService()
 	b := db.NewBookService(books, ps)

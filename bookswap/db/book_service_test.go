@@ -10,6 +10,7 @@ import (
 )
 
 func TestGetBook(t *testing.T) {
+
 	t.Run("initial books", func(t *testing.T) {
 		eb := db.Book{
 			ID:     uuid.New().String(),
