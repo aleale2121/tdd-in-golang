@@ -16,7 +16,6 @@ type PostingService struct {
 func (_m *PostingService) NewOrder(b db.Book) error {
 	ret := _m.Called(b)
 
-
 	var r0 error
 	if rf, ok := ret.Get(0).(func(db.Book) error); ok {
 		r0 = rf(b)

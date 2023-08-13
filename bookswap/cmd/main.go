@@ -1,53 +1,50 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	_ "embed"
-
 	"github.com/aleale2121/golang-tdd/bookswap/db"
 	"github.com/aleale2121/golang-tdd/bookswap/handlers"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
-
-//go:embed books.json
-var booksFile []byte
-
-//go:embed users.json
-var usersFile []byte
 
 func main() {
 	port, ok := os.LookupEnv("BOOKSWAP_PORT")
 	if !ok {
 		log.Fatal("$BOOKSWAP_PORT not found")
 	}
+	postgresURL, ok := os.LookupEnv("BOOKSWAP_DB_URL")
+	if !ok {
+		log.Fatal("$BOOKSWAP_DB_URL not found")
+	}
+	m, err := migrate.New("file://db/migrations", postgresURL)
+	if err != nil {
+		log.Fatalf("migrate:%v", err)
+	}
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("migration up:%v", err)
+	}
+	// defer func() {
+	// 	m.Down()
+	// }()
+	dbConn, err := gorm.Open(postgres.Open(postgresURL), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("db open:%v", err)
+	}
 
-	books, users := importInitial()
 	ps := db.NewPostingService()
-	b := db.NewBookService(books, ps)
-	u := db.NewUserService(users, b)
+	b := db.NewBookService(dbConn, ps)
+	u := db.NewUserService(dbConn, b)
 	h := handlers.NewHandler(b, u)
 
 	router := handlers.ConfigureServer(h)
 	log.Printf("Listening on :%s...\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprint(":", port), router))
-}
-
-func importInitial() ([]db.Book, []db.User) {
-	var books []db.Book
-	var users []db.User
-
-	err := json.Unmarshal(booksFile, &books)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = json.Unmarshal(usersFile, &users)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return books, users
 }
