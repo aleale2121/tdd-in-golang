@@ -22,9 +22,9 @@ func main() {
 	}
 	postgresURL, ok := os.LookupEnv("BOOKSWAP_DB_URL")
 	if !ok {
-		log.Fatal("$BOOKSWAP_DB_URL not found")
+		log.Fatal("env variable BOOKSWAP_DB_URL not found")
 	}
-	m, err := migrate.New("file://db/migrations", postgresURL)
+	m, err := migrate.New("file://chapter07/db/migrations", postgresURL)
 	if err != nil {
 		log.Fatalf("migrate:%v", err)
 	}
@@ -40,7 +40,7 @@ func main() {
 	}
 
 	ps := db.NewPostingService()
-	b := db.NewBookService(dbConn, ps)
+	b := db.NewBookRepository(dbConn, ps)
 	u := db.NewUserService(dbConn, b)
 	h := handlers.NewHandler(b, u)
 

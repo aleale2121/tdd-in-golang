@@ -25,7 +25,7 @@ func TestIndexIntegration(t *testing.T) {
 	testDB, cleaner := db.OpenDB(t)
 	defer cleaner()
 	// Arrange
-	bs := db.NewBookService(testDB, nil)
+	bs := db.NewBookRepository(testDB, nil)
 	book := bs.Upsert(db.Book{
 		Name:   "My first integration test",
 		Status: db.Available.String(),
@@ -58,7 +58,7 @@ func TestListBooksIntegration(t *testing.T) {
 	// Arrange
 	testDB, cleaner := db.OpenDB(t)
 	defer cleaner()
-	bs := db.NewBookService(testDB, nil)
+	bs := db.NewBookRepository(testDB, nil)
 	eb := bs.Upsert(db.Book{
 		Name:   "My first integration test",
 		Status: db.Available.String(),
@@ -124,7 +124,7 @@ func TestBookUpsertIntegration(t *testing.T) {
 	// Arrange
 	testDB, cleaner := db.OpenDB(t)
 	defer cleaner()
-	bs := db.NewBookService(testDB, nil)
+	bs := db.NewBookRepository(testDB, nil)
 	us := db.NewUserService(testDB, bs)
 	eu, err := us.Upsert(db.User{
 		Name: "Existing user",
@@ -166,7 +166,7 @@ func TestListUserByIDIntegration(t *testing.T) {
 	// Arrange
 	testDB, cleaner := db.OpenDB(t)
 	defer cleaner()
-	bs := db.NewBookService(testDB, nil)
+	bs := db.NewBookRepository(testDB, nil)
 	us := db.NewUserService(testDB, bs)
 	eu, err := us.Upsert(db.User{
 		Name: "Existing user",
@@ -209,7 +209,7 @@ func TestSwapBookIntegration(t *testing.T) {
 	testDB, cleaner := db.OpenDB(t)
 	defer cleaner()
 	ps := db.NewPostingService()
-	bs := db.NewBookService(testDB, ps)
+	bs := db.NewBookRepository(testDB, ps)
 	us := db.NewUserService(testDB, bs)
 	eu, err := us.Upsert(db.User{
 		Name: "Existing user",

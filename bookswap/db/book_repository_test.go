@@ -16,7 +16,7 @@ func TestGetBook(t *testing.T) {
 	testDB, cleaner := db.OpenDB(t)
 	defer cleaner()
 	t.Run("initial books", func(t *testing.T) {
-		bs := db.NewBookService(testDB, nil)
+		bs := db.NewBookRepository(testDB, nil)
 		eb := bs.Upsert(db.Book{
 			Name:   "New Book",
 			Status: db.Available.String(),
@@ -24,33 +24,34 @@ func TestGetBook(t *testing.T) {
 		assert.NotNil(t, eb)
 
 		tests := map[string]struct {
-			id      string
+			book    db.Book
 			want    db.Book
 			wantErr error
 		}{
-			"existing book": {id: eb.ID, want: eb},
-			"no book found": {id: "not-found", wantErr: db.ErrRecordNotFound},
-			"empty id":      {id: "", wantErr: db.ErrRecordNotFound},
+			"existing book": {book: db.Book{ID: eb.ID}, want: eb},
+			"no book found": {book: db.Book{ID: "not-found"}, wantErr: db.ErrRecordNotFound},
+			"empty id":      {book: db.Book{}, wantErr: db.ErrRecordNotFound},
 		}
 		for name, tc := range tests {
 			t.Run(name, func(t *testing.T) {
-				b, err := bs.Get(tc.id)
+				err := bs.Get(&tc.book)
 				if tc.wantErr != nil {
 					assert.Equal(t, tc.wantErr, err)
-					assert.Nil(t, b)
 					return
 				}
 				assert.Nil(t, err)
-				assert.Equal(t, tc.want, *b)
+				assert.Equal(t, tc.want, eb)
 			})
 		}
 	})
 
 	t.Run("invalid id", func(t *testing.T) {
-		bs := db.NewBookService(testDB, nil)
-		b, err := bs.Get("invalid-id")
+		bs := db.NewBookRepository(testDB, nil)
+		ib := db.Book{
+			ID: "invalid-id",
+		}
+		err := bs.Get(&ib)
 		assert.Equal(t, db.ErrRecordNotFound, err)
-		assert.Nil(t, b)
 	})
 }
 
@@ -62,7 +63,7 @@ func TestUpsertBook(t *testing.T) {
 		OwnerID: uuid.New().String(),
 	}
 	t.Run("new book", func(t *testing.T) {
-		bs := db.NewBookService(testDB, nil)
+		bs := db.NewBookRepository(testDB, nil)
 		b := bs.Upsert(newBook)
 		assert.Equal(t, newBook.Name, b.Name)
 		assert.Equal(t, newBook.OwnerID, b.OwnerID)
@@ -71,7 +72,7 @@ func TestUpsertBook(t *testing.T) {
 	})
 
 	t.Run("duplicate book", func(t *testing.T) {
-		bs := db.NewBookService(testDB, nil)
+		bs := db.NewBookRepository(testDB, nil)
 		b1 := bs.Upsert(newBook)
 		b2 := bs.Upsert(b1)
 		assert.Equal(t, b1, b2)
@@ -82,7 +83,7 @@ func TestListBooks(t *testing.T) {
 	testDB, cleaner := db.OpenDB(t)
 	defer cleaner()
 	t.Run("existing books", func(t *testing.T) {
-		bs := db.NewBookService(testDB, nil)
+		bs := db.NewBookRepository(testDB, nil)
 		eb := bs.Upsert(db.Book{
 			Name:   "Existing book",
 			Status: db.Available.String(),
@@ -94,7 +95,7 @@ func TestListBooks(t *testing.T) {
 	})
 
 	t.Run("new book", func(t *testing.T) {
-		bs := db.NewBookService(testDB, nil)
+		bs := db.NewBookRepository(testDB, nil)
 		eb := bs.Upsert(db.Book{
 			Name:   "Existing book",
 			Status: db.Available.String(),
@@ -116,7 +117,7 @@ func TestListBooksByUser(t *testing.T) {
 	testDB, cleaner := db.OpenDB(t)
 	defer cleaner()
 	t.Run("existing book", func(t *testing.T) {
-		bs := db.NewBookService(testDB, nil)
+		bs := db.NewBookRepository(testDB, nil)
 		eb := bs.Upsert(db.Book{
 			Name:    "Existing book",
 			Status:  db.Available.String(),
@@ -131,7 +132,7 @@ func TestListBooksByUser(t *testing.T) {
 	t.Run("multiple books", func(t *testing.T) {
 		testDB, cleaner := db.OpenDB(t)
 		defer cleaner()
-		bs := db.NewBookService(testDB, nil)
+		bs := db.NewBookRepository(testDB, nil)
 		eb := bs.Upsert(db.Book{
 			Name:    "Existing book",
 			Status:  db.Available.String(),
@@ -149,7 +150,7 @@ func TestListBooksByUser(t *testing.T) {
 	})
 
 	t.Run("no books for user", func(t *testing.T) {
-		bs := db.NewBookService(testDB, nil)
+		bs := db.NewBookRepository(testDB, nil)
 		books, err := bs.ListByUser(uuid.New().String())
 		require.Nil(t, err)
 		assert.Empty(t, books)
@@ -166,7 +167,7 @@ func TestSwapBook(t *testing.T) {
 	}
 	t.Run("existing book", func(t *testing.T) {
 		ps := mocks.NewPostingService(t)
-		bs := db.NewBookService(testDB, ps)
+		bs := db.NewBookRepository(testDB, ps)
 		ps.On("NewOrder", mock.MatchedBy(func(b db.Book) bool {
 			return b.ID == eb.ID
 		})).Return(nil).Once()
@@ -183,7 +184,7 @@ func TestSwapBook(t *testing.T) {
 
 	t.Run("unknown book", func(t *testing.T) {
 		ps := mocks.NewPostingService(t)
-		bs := db.NewBookService(testDB, ps)
+		bs := db.NewBookRepository(testDB, ps)
 		eb = bs.Upsert(eb)
 		book, err := bs.SwapBook(uuid.New().String(), uuid.New().String())
 		assert.Nil(t, book)
@@ -194,7 +195,7 @@ func TestSwapBook(t *testing.T) {
 
 	t.Run("empty list", func(t *testing.T) {
 		ps := mocks.NewPostingService(t)
-		bs := db.NewBookService(testDB, ps)
+		bs := db.NewBookRepository(testDB, ps)
 		book, err := bs.SwapBook(uuid.New().String(), uuid.New().String())
 		assert.Nil(t, book)
 		assert.NotNil(t, err)
@@ -204,7 +205,7 @@ func TestSwapBook(t *testing.T) {
 
 	t.Run("unavailable book", func(t *testing.T) {
 		ps := mocks.NewPostingService(t)
-		bs := db.NewBookService(testDB, ps)
+		bs := db.NewBookRepository(testDB, ps)
 		eb = bs.Upsert(eb)
 		ps.On("NewOrder", mock.MatchedBy(func(b db.Book) bool {
 			return b.ID == eb.ID
@@ -226,7 +227,7 @@ func TestSwapBook(t *testing.T) {
 	t.Run("error posting", func(t *testing.T) {
 		postingErr := errors.New("posting error")
 		ps := mocks.NewPostingService(t)
-		bs := db.NewBookService(testDB, ps)
+		bs := db.NewBookRepository(testDB, ps)
 		eb = bs.Upsert(eb)
 		ps.On("NewOrder", mock.MatchedBy(func(b db.Book) bool {
 			return b.ID == eb.ID
