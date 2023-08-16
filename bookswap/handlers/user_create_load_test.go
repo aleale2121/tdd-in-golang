@@ -1,4 +1,4 @@
-package handlers
+package handlers_test
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aleale2121/golang-tdd/bookswap/handlers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +39,7 @@ func TestUpsertUser_Load(t *testing.T) {
 			r.Body.Close()
 			require.Nil(t, err)
 
-			var resp Response
+			var resp handlers.Response
 			err = json.Unmarshal(body, &resp)
 			require.Nil(t, err)
 			assert.Equal(t, http.StatusOK, r.StatusCode)
