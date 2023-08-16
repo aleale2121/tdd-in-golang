@@ -6,4 +6,5 @@ COPY . .
 RUN go mod download
 RUN go build -o myapp ./cmd/main.go
 EXPOSE ${BOOKSWAP_PORT}
+EXPOSE ${BOOKSWAP_DB_URL}
 CMD [ "./myapp" ]

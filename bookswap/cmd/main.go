@@ -24,7 +24,7 @@ func main() {
 	if !ok {
 		log.Fatal("env variable BOOKSWAP_DB_URL not found")
 	}
-	m, err := migrate.New("file://chapter07/db/migrations", postgresURL)
+	m, err := migrate.New("file://db/migrations", postgresURL)
 	if err != nil {
 		log.Fatalf("migrate:%v", err)
 	}
